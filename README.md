@@ -146,3 +146,5 @@ JackSignal provides a Home Assistant media player using FFmpeg and the default P
 Install the integration from the custom **jacksignal-ha** repository, or use **JackSignal Installer** from **Mis-app** on Home Assistant OS. With the installer, click **Start**, check its log, then restart Home Assistant. Repeat those steps after updating the installer. It intentionally stops after copying the integration and does not support automatic startup. Use one installation method to manage updates.
 
 Upload clips in Home Assistant Media. Under JackSignal's configuration, assign sounds and speech rules and review assignments. Use the visual **Play alert** or **Speak sensor value** actions in any automation. Higher or equal priorities replace current audio; lower priorities are dropped. A repeating critical alarm siren is protected. Interrupted music is not resumed. DLNA is not Cast, AirPlay or Spotify Connect.
+
+Forgejo publica esta distribución automáticamente a partir de la integración del proyecto de origen.
