@@ -2,7 +2,11 @@ name: Publicar versión para Marketplace
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
+    paths:
+      - 'custom_components/jacksignal/manifest.json'
+      - '.github/workflows/release.yaml'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +40,12 @@ jobs:
             echo '::error::La etiqueta no coincide con manifest.json'
             exit 1
           fi
+          # A mirror may deliver the branch before its tag; allow that short delay.
+          for attempt in 1 2 3 4; do
+            git fetch origin "refs/tags/$tag:refs/tags/$tag" && break
+            if [ "$attempt" == 4 ]; then exit 1; fi
+            sleep 5
+          done
           git rev-parse --verify "refs/tags/$tag^{commit}" >/dev/null
           git diff --exit-code "$tag" HEAD -- custom_components/jacksignal hacs.json
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -54,6 +64,9 @@ jobs:
             echo "La release $TAG ya existe." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          printf 'JackSignal %s para Home Assistant.\n\nInstala esta versión desde Marketplace/HACS y reinicia Home Assistant.\n\n[Guía de uso](https://github.com/Gente-del-Condado/jacksignal-ha/tree/%s)\n' "$VERSION" "$TAG" > "$RUNNER_TEMP/release-notes.md"
+          printf 'JackSignal %s para Home Assistant.\n\nInstala esta versión desde Marketplace y sigue el aviso de reinicio que muestre Home Assistant.\n\n[Guía de uso](https://github.com/Gente-del-Condado/jacksignal-ha/tree/%s)\n' "$VERSION" "$TAG" > "$RUNNER_TEMP/release-notes.md"
+          if [ -f CHANGELOG.md ]; then
+            awk -v version="$VERSION" '$0 == "## " version {found=1; next} found && /^## / {exit} found {print}' CHANGELOG.md >> "$RUNNER_TEMP/release-notes.md"
+          fi
           gh release create "$TAG" --verify-tag --title "JackSignal $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
           echo "Release $TAG publicada para Marketplace." >> "$GITHUB_STEP_SUMMARY"
