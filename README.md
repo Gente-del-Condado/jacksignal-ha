@@ -162,3 +162,5 @@ Install the integration from the custom **jacksignal-ha** repository in Marketpl
 Upload clips in Home Assistant Media. Under JackSignal's configuration, assign sounds and speech rules and review assignments. Use the visual **Play alert** or **Speak sensor value** actions in any automation. Higher or equal priorities replace current audio; lower priorities are dropped. A repeating critical alarm siren is protected. Interrupted music is not resumed. DLNA is not Cast, AirPlay or Spotify Connect.
 
 Direct audio: Configure → Send audio supports native uploads (up to 100 MB), direct HTTP(S) audio URLs and existing local media, at low priority. Valid uploads remain in My media/jacksignal. Video is rejected. The direct stop button cannot stop Alarmo. Configure → DLNA diagnostics shows runtime receiver state and sanitized HTTP activity; refresh manually.
+
+Forgejo publica esta distribución automáticamente a partir de la integración del proyecto de origen.
