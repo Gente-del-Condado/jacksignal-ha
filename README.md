@@ -125,7 +125,7 @@ En **Configurar → Configurar voz de un sensor**:
 3. Elige prioridad y disparador: manual, cambio de valor, superar un umbral o bajar de un umbral.
 4. Usa **Probar sin guardar** y después **Guardar**. Vuelve a elegir el sensor para editar o eliminar su regla.
 
-Se guarda una regla por sensor. En **JackSignal → Voz → Editar**, elige el motor, el idioma y una voz compatible; puedes ver la frase con el valor actual y **Escuchar antes de guardar (P0)**. Desde 0.12.1, las reglas sin idioma ni voz explícitos también prefieren español automáticamente. El formulario nativo conserva la selección del panel mientras no cambies de motor. Los textos son literales, sin plantillas YAML/Jinja. Los sensores binarios leen `on`/`off`; para avisos distintos al abrir y cerrar utiliza las reglas de sonido.
+Se guarda una regla por sensor. En **JackSignal → Voz → Editar**, elige el motor, el idioma y una voz compatible; puedes ver la frase con el valor actual y **Escuchar antes de guardar (P0)**. Desde 0.12.1, las reglas sin idioma ni voz explícitos también prefieren español automáticamente. El formulario nativo conserva la selección del panel mientras no cambies de motor. Los textos son literales, sin plantillas YAML/Jinja. En **JackSignal → Voz → Editar → Qué dice cada estado**, añade equivalencias como `on → abierta` y `off → cerrada`. Con el texto previo «La ventana está», la voz dirá «La ventana está abierta». Puedes elegir «encendido/apagado» u otras palabras para cada estado exacto (`true`, `false`, `open`, `closed`, etc.). Sin equivalencia se lee el valor original; los disparadores y umbrales siguen usando el estado real. La vista previa y las tarjetas muestran la configuración, y el formulario nativo la conserva. Las prioridades de Alarmo no cambian.
 
 Los umbrales actúan al cruzarlos. El intervalo mínimo entre avisos automáticos es de 60 segundos por defecto: descarta avisos próximos, no los pone en espera. No anuncia valores desconocidos/no disponibles ni cambios de recuperación al arrancar.
 
@@ -221,5 +221,3 @@ Para informar de un problema, indica versiones de Home Assistant y JackSignal, m
 La instalación y la reproducción local han sido probadas en una Raspberry Pi 4B. Las pruebas automáticas cubren prioridades, reglas, voz, formularios, instalación y DLNA. La voz con cada motor real, la pausa/reanudación física y la compatibilidad de emisores/redes DLNA requieren validación en el equipo correspondiente.
 
 [Proyecto de origen](https://github.com/Gente-del-Condado/jacksignal) · [Código principal en Forgejo](https://gentedelcondado.es/forgejo/wolfbelmi88/jacksignal) · [Historial de versiones de la aplicación](https://github.com/Gente-del-Condado/Mis-app/blob/main/jacksignal_installer/CHANGELOG.md).
-
-Forgejo publica esta distribución automáticamente a partir de la integración del proyecto de origen.
