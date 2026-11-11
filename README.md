@@ -47,6 +47,20 @@ Admite MP3, WAV, Ogg, Opus, FLAC, M4A y AAC, además de URLs HTTP(S) de audio ac
 
 El reproductor suele llamarse `media_player.jacksignal`; comprueba el identificador de tu instalación. Ofrece reproducir, pausar, detener, volumen y silencio. **Volumen y silencio afectan a toda la salida PulseAudio predeterminada**, incluidas otras aplicaciones que la utilicen.
 
+## Gestionar avisos desde el panel
+
+Desde la versión **0.10.0**, abre **JackSignal** en la barra lateral de Home Assistant o **JackSignal → Configurar → Gestionar avisos**. El panel y sus acciones requieren una cuenta administradora. La interfaz está en español y se adapta a móvil y escritorio.
+
+- **Sensores, Alarmo y Voz:** cada sección muestra los avisos correspondientes. Los sensores disponibles y las reglas guardadas aparecen incluso cuando todavía no tienen sonido o el sensor ya no está disponible.
+- **Buscar:** filtra por nombre, identificador de sensor, archivo de sonido o texto de voz; ignora diferencias de mayúsculas y tildes.
+- **Mostrar:** todos, configurados y activados, sin configurar o desactivados. Se muestran hasta 60 resultados inicialmente; **Mostrar más** amplía la lista.
+- **Editar / Configurar:** modifica el aviso directamente. Apertura y cierre tienen bloques separados y cada condición activa requiere su propio sonido. Los estados técnicos del sensor quedan en **Opciones avanzadas**. Los cambios solo se aplican al guardar.
+- **Activar / Desactivar:** conserva archivos, condiciones, prioridad y texto de voz. Las reglas existentes siguen activadas por defecto. Un aviso de voz desactivado tampoco se ejecuta desde su acción de automatización. Desactivar la regla de sirena disparada detiene su sirena; reactivarla con el panel todavía disparado puede restaurar la repetición configurada. Para otros avisos, desactivar evita nuevos disparos, sin cancelar un clip que ya haya comenzado.
+- **Probar apertura / Probar cierre / Probar / Escuchar:** usa la configuración guardada, siempre con prioridad baja **P0**, sin repetición. No cambia el estado de Alarmo ni de los sensores y no activa una regla desactivada. Un aviso de prioridad superior o una sirena protegida bloquean la prueba. **Detener prueba** solo detiene el audio iniciado desde este panel.
+- **Actualizar:** vuelve a leer las reglas y los estados actuales. Si otra pantalla ha cambiado la configuración, se rechaza el guardado obsoleto para evitar sobrescribirla: cierra el editor, actualiza y vuelve a editar.
+
+Los sonidos se seleccionan de los directorios de **Mis medios**; para subir un archivo usa **Configuración y audio → Enviar audio** o Multimedia. La lista del editor está limitada a 2000 archivos y 2000 carpetas; si se alcanza el límite, se muestra un aviso y se conservan las selecciones anteriores. El formulario tradicional sigue disponible para bibliotecas mayores. El resumen de asignaciones en texto también se conserva como alternativa.
+
 ## Alarmo y sensores de apertura/cierre
 
 En **JackSignal → Configurar**:
@@ -167,5 +181,3 @@ Para informar de un problema, indica versiones de Home Assistant y JackSignal, m
 La instalación y la reproducción local han sido probadas en una Raspberry Pi 4B. Las pruebas automáticas cubren prioridades, reglas, voz, formularios, instalación y DLNA. La voz con cada motor real, la pausa/reanudación física y la compatibilidad de emisores/redes DLNA requieren validación en el equipo correspondiente.
 
 [Proyecto de origen](https://github.com/Gente-del-Condado/jacksignal) · [Código principal en Forgejo](https://gentedelcondado.es/forgejo/wolfbelmi88/jacksignal) · [Historial de versiones de la aplicación](https://github.com/Gente-del-Condado/Mis-app/blob/main/jacksignal_installer/CHANGELOG.md).
-
-Forgejo publica esta distribución automáticamente a partir de la integración del proyecto de origen.
