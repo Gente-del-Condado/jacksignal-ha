@@ -5,7 +5,6 @@ on:
     branches: [main]
     tags: ['v*']
     paths:
-      - 'custom_components/jacksignal/manifest.json'
       - '.github/workflows/release.yaml'
   workflow_dispatch:
 
@@ -13,7 +12,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: marketplace-release
+  # Cada etiqueta tiene su cola: una versión anterior no bloquea las siguientes.
+  group: marketplace-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -68,5 +68,6 @@ jobs:
           if [ -f CHANGELOG.md ]; then
             awk -v version="$VERSION" '$0 == "## " version {found=1; next} found && /^## / {exit} found {print}' CHANGELOG.md >> "$RUNNER_TEMP/release-notes.md"
           fi
-          gh release create "$TAG" --verify-tag --title "JackSignal $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
+          # Una ejecución manual y el push de etiqueta pueden coincidir.
+          gh release create "$TAG" --verify-tag --title "JackSignal $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" || gh release view "$TAG" >/dev/null
           echo "Release $TAG publicada para Marketplace." >> "$GITHUB_STEP_SUMMARY"
