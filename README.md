@@ -122,7 +122,11 @@ Desde 0.17.0, abre **JackSignal → Sensores → ficha del sensor → 3. Histori
 
 El resultado se actualiza cuando termina FFmpeg o se interrumpe el audio. «Finalizada sin errores» confirma el resultado del proceso, no que el altavoz haya emitido sonido audible. Se registran omisiones por intervalo, prioridad, configuración manual/desactivada, falta de audio, condiciones de Alarmo o cambios de estado durante la preparación. Las pruebas del panel siguen usando P0; el historial no cambia las prioridades.
 
-Se muestran los últimos **50 registros por sensor**, del más reciente al más antiguo, con un límite global de **1.000 registros en memoria**. Se conservan al editar la configuración y se vacían al reiniciar Home Assistant. No se escribe un registro permanente en disco. Si el sensor no comunica cambios a Home Assistant, no se inventan intentos de reproducción: consulta también la disponibilidad y las fechas de su ficha.
+El historial se guarda en el almacenamiento local de Home Assistant y se conserva tras reiniciarlo. En **Gestionar avisos → Historial: conservación y limpieza** puedes elegir entre **1 y 365 días** (7 por defecto). Hay un máximo global de **1.000 registros**: los más antiguos se eliminan al superar el plazo o el límite. Reducir la retención aplica la limpieza inmediatamente.
+
+Cada historial permite filtrar por **resultado, audio o voz, prioridad, periodo y texto** (origen, motivo o estado). Se consultan todos los registros conservados y se muestran en bloques de 50 con **Mostrar 50 más**. Puedes borrar el historial de un sensor o el completo, con confirmación; el borrado incluye registros ocultos por los filtros y no modifica avisos ni prioridades.
+
+Las escrituras se agrupan con un retraso de 15 segundos tras los cambios para reducir accesos al disco y se guardan al detener o descargar la integración. Un corte de corriente puede perder cambios pendientes. Si un intento quedó sin resultado final antes del reinicio, se marca como interrumpido. Si el sensor no comunica cambios a Home Assistant, no se inventan intentos: consulta también su disponibilidad y fechas.
 
 Los historiales abiertos de sensores visibles se actualizan junto al diagnóstico cada cinco segundos (hasta 20 abiertos). También disponen de **Actualizar historial**. El acceso sigue limitado a administradores.
 
@@ -259,5 +263,3 @@ Para informar de un problema, indica versiones de Home Assistant y JackSignal, m
 La instalación y la reproducción local han sido probadas en una Raspberry Pi 4B. Las pruebas automáticas cubren prioridades, reglas, voz, formularios, instalación y DLNA. La voz con cada motor real, la pausa/reanudación física y la compatibilidad de emisores/redes DLNA requieren validación en el equipo correspondiente.
 
 [Proyecto de origen](https://github.com/Gente-del-Condado/jacksignal) · [Código principal en Forgejo](https://gentedelcondado.es/forgejo/wolfbelmi88/jacksignal) · [Historial de versiones de la aplicación](https://github.com/Gente-del-Condado/Mis-app/blob/main/jacksignal_installer/CHANGELOG.md).
-
-Forgejo publica esta distribución automáticamente a partir de la integración del proyecto de origen.
