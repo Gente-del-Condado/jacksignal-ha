@@ -254,6 +254,17 @@ async def handle(hass, entry, msg):
             raise ValueError("Selecciona un sensor válido.")
         removed = await history.clear(hass, key if msg["scope"] == "sensor" else None)
         return {"removed": removed, "settings": history.settings(hass)}
+    if action == "history_all":
+        key = msg.get("key", "")
+        if not isinstance(key, str) or len(key) > 255 or (key and key.partition(".")[0] not in {"sensor", "binary_sensor"}):
+            raise ValueError("Selecciona un sensor válido o todos los sensores.")
+        result = history.query(hass, key or None, msg.get("filters"), msg.get("limit", 50))
+        keys = {item["sensor"] for item in hass.data.get(history.DATA, ())}
+        sensors = []
+        for entity_id in sorted(keys):
+            state = hass.states.get(entity_id)
+            sensors.append({"key": entity_id, "name": state.name if state else entity_id})
+        return {**result, "sensors": sensors}
     if action == "history":
         key = msg.get("key", "")
         if not isinstance(key, str) or len(key) > 255 or key.partition(".")[0] not in {"sensor", "binary_sensor"}:

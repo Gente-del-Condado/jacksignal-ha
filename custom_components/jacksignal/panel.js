@@ -86,6 +86,7 @@ class JackSignalPanel extends HTMLElement {
         <div class="overview" aria-label="Resumen de avisos"><div class="metric"><strong id="count-active">—</strong>Activados</div><div class="metric"><strong id="count-disabled">—</strong>Desactivados</div><div class="metric"><strong id="count-empty">—</strong>Sin configurar</div><div class="metric" id="live">Consultando reproducción…</div></div>
         <div class="nav" role="group" aria-label="Tipo de aviso"><button type="button" data-kind="sensor" aria-pressed="true">Sensores</button><button type="button" data-kind="alarm" aria-pressed="false">Alarmo</button><button type="button" data-kind="speech" aria-pressed="false">Solo voz</button></div>
         <details id="voice-general" class="tip" hidden><summary>Configuración general de voz y Piper</summary><p id="voice-general-info"></p><div class="actions"><button id="voice-defaults" type="button">Configurar voz general</button><button id="piper-prepare" type="button">Preparar Piper</button><a class="button" href="/config/integrations/dashboard">Conectar Wyoming</a><a id="piper-app" class="button" href="/hassio/addon/core_piper/info">Abrir Piper</a></div><p id="piper-status" role="status"></p></details>
+        <div id="global-history"></div>
         <details id="history-settings" class="tip"><summary id="history-settings-title">Historial: conservación y limpieza</summary><p id="history-settings-info"></p><form id="history-settings-form" aria-labelledby="history-settings-title"><div class="field"><label for="history-days">Días de conservación (1–365)</label><input id="history-days" name="days" type="number" min="1" max="365" step="1" required></div><p>Reducir los días elimina los registros más antiguos. Se mantiene un máximo de 1.000 registros entre todos los sensores, aunque no se haya alcanzado el plazo.</p><button id="history-save" type="submit">Guardar y aplicar retención</button></form><div id="history-clear-all"></div><p id="history-settings-message" role="status"></p></details>
         <p id="connection-status" class="muted" role="status">Consultando el estado de los sensores…</p><search aria-label="Buscar avisos"><div class="filters"><div class="field"><label for="query">Buscar por nombre, sensor o sonido</label><input id="query" type="search" name="query" placeholder="Por ejemplo, ventana del salón" autocapitalize="none" spellcheck="false"></div><div class="field"><label for="filter">Mostrar</label><select id="filter" name="filter"><option value="all">Todos</option><option value="configured">Configurados y activados</option><option value="unconfigured">Sin configurar</option><option value="disabled">Desactivados</option></select></div><div class="field" id="availability-field"><label for="availability-filter">Disponibilidad del sensor</label><select id="availability-filter" name="availability"><option value="all">Todas</option><option value="available">Disponible</option><option value="unavailable">No disponible</option><option value="unknown">Estado desconocido</option><option value="missing">Entidad no encontrada</option></select></div></div></search>
         <div class="actions"><button id="compact" type="button" aria-pressed="true">Vista compacta</button><button id="select-visible" type="button">Seleccionar configurados visibles</button><button id="clear-selection" type="button">Quitar selección</button></div>
@@ -114,6 +115,8 @@ class JackSignalPanel extends HTMLElement {
     this.$('select-visible').addEventListener('click', () => {for (const row of this.visibleRows || []) if (row.configured && this.selected.size < 200) this.selected.add(`${row.kind}:${row.key}`); this.renderList();});
     this.$('voice-defaults').addEventListener('click', () => this.editDefaults());
     this.$('piper-prepare').addEventListener('click', () => this.preparePiper());
+    this.globalHistory=this.historyCard({key:'',name:'Todos los sensores'},true);
+    this.$('global-history').append(this.globalHistory);
     this.$('history-days').addEventListener('input',()=>{this.historyDaysDirty=true;});
     this.$('history-settings-form').addEventListener('submit',e=>{e.preventDefault();this.saveHistorySettings();});
     this.$('history-clear-all').append(this.historyDeleteControls('all',null,async()=>{for(const box of this.shadowRoot.querySelectorAll('details[data-history]')) this.renderHistory(box,[],0);}));
@@ -133,6 +136,7 @@ class JackSignalPanel extends HTMLElement {
   async pollStatus() {
     if (!this._hass || document.hidden || this.statusPending) return;
     this.statusPending = true;
+    if(this.globalHistory?.open) await this.globalHistory.refreshHistory();
     try {this.renderStatus(await this.request({action:'status',history_queries:[...this.shadowRoot.querySelectorAll('details[data-history][open]')].filter(box=>(this.visibleRows || []).some(row=>row.key===box.dataset.history)).slice(0,20).map(box=>this.historyRequest(box)),entities:[...new Set((this.visibleRows || []).filter(row => row.kind !== 'alarm').map(row => row.key))].slice(0,2000)})); this.connectionStatus('Estados actualizados cada 5 segundos · Pulsa Actualizar para recalcular la lista filtrada');}
     catch {this.$('live').textContent = 'Estado de reproducción no disponible'; this.connectionStatus('No se pudo actualizar. Los datos mostrados pueden estar desactualizados. Revisa la conexión con Home Assistant.');}
     finally {this.statusPending = false;}
@@ -187,7 +191,7 @@ class JackSignalPanel extends HTMLElement {
     return box;
   }
   historyRequest(box) {
-    return {key:box.dataset.history,limit:box.historyLimit || 50,filters:Object.fromEntries(Object.entries(box.historyFilters || {}).map(([key,input])=>[key,key==='days'?Number(input.value):input.value]))};
+    return {key:box.sensorFilter?.value ?? box.dataset.history,limit:box.historyLimit || 50,filters:Object.fromEntries(Object.entries(box.historyFilters || {}).map(([key,input])=>[key,key==='days'?Number(input.value):input.value]))};
   }
   historySettingsInfo(settings) {
     if (!settings) return;
@@ -226,6 +230,7 @@ class JackSignalPanel extends HTMLElement {
     const names = {preparing:'Preparando',started:'Reproducción iniciada',completed:'Finalizada sin errores',interrupted:'Interrumpida',omitted:'Omitido',error:'Error'};
     for (const item of items) {
       const line = node('li',null,{class:'history-entry'});
+      if(box.globalHistory) {const name=box.sensorNames?.get(item.sensor) || item.sensor;line.append(node('p',`${name}${name!==item.sensor?' · '+item.sensor:''}`,{class:'id'}));}
       line.append(node('strong',names[item.status] || item.status),node('p',`${item.source} · ${labels[item.priority] || item.priority}`));
       line.append(node('time',timestampText(item.time,this._hass?.config?.time_zone),{datetime:item.time}));
       if (item.updated) line.append(node('p',`Último resultado: ${timestampText(item.updated,this._hass?.config?.time_zone)}`,{class:'muted'}));
@@ -237,9 +242,10 @@ class JackSignalPanel extends HTMLElement {
     const more=box.querySelector('[data-history-more]');if(more) more.hidden=items.length>=total;
     if (message.textContent !== text) message.textContent = text;
   }
-  historyCard(row) {
+  historyCard(row,global=false) {
     const box = node('details',null,{class:'history','data-history':row.key});
-    box.append(node('summary','3. Historial de avisos'));
+    box.globalHistory=global;
+    box.append(node('summary',global?'Historial de todos los sensores':'3. Historial de avisos'));
     box.append(node('p','Historial guardado en Home Assistant según los días de conservación, con un máximo global de 1.000 registros. Los filtros se aplican a todo el historial conservado. Finalizada sin errores confirma el resultado de FFmpeg, no el sonido físico.',{class:'muted'}));
     box.historyLimit=50;box.historyFilters={};
     const filters=node('search',null,{class:'filters','aria-label':`Filtros del historial: ${row.name}`});
@@ -251,21 +257,42 @@ class JackSignalPanel extends HTMLElement {
       field.append(node('label',title,{for:id}),input);filters.append(field);box.historyFilters[key]=input;
       input.addEventListener('change',()=>{box.historyLimit=50;refresh();});
     }
+    if(global) {
+      const field=node('div',null,{class:'field'}),input=node('select',null,{id:'history-global-sensor',name:'sensor'});
+      input.append(node('option','Todos los sensores',{value:''}));box.sensorFilter=input;
+      field.append(node('label','Sensor',{for:'history-global-sensor'}),input);filters.insertBefore(field,filters.firstChild);
+      input.addEventListener('change',()=>{box.historyLimit=50;refresh();});
+    }
     box.append(filters);
     const button = node('button','Actualizar historial',{type:'button','aria-label':`Actualizar historial: ${row.name}`});
     const message = node('p','',{'data-history-message':'',role:'status'});
     const refresh = async () => {
       if (button.disabled) return;
       button.disabled = true;
-      try {const response = await this.request({action:'history',...this.historyRequest(box)});this.renderHistory(box,response.entries,response.total);}
+      try {const request=this.historyRequest(box);const response = await this.request({action:global?'history_all':'history',...request});
+        if(global) {
+          const sensors=response.sensors || [],signature=JSON.stringify(sensors);
+          if(box.sensorSignature!==signature) {
+            const selected=box.sensorFilter.value;box.sensorFilter.replaceChildren(node('option','Todos los sensores',{value:''}));
+            box.sensorNames=new Map(sensors.map(sensor=>[sensor.key,sensor.name]));
+            for(const sensor of sensors) box.sensorFilter.append(node('option',`${sensor.name} · ${sensor.key}`,{value:sensor.key}));
+            if(selected && !box.sensorNames.has(selected)) box.sensorFilter.append(node('option',selected,{value:selected}));
+            box.sensorFilter.value=selected;box.sensorSignature=signature;
+          }
+        }
+        // A filter may change while a previous request is in flight.
+        if(JSON.stringify(request)===JSON.stringify(this.historyRequest(box))) this.renderHistory(box,response.entries,response.total);
+      }
       catch(err) {message.textContent = `No se pudo actualizar el historial. ${this.error(err)}`;}
       finally {button.disabled = false;}
     };
+    box.refreshHistory=refresh;
     button.addEventListener('click',refresh);
     box.addEventListener('toggle',() => {if (box.open) refresh();});
     const more=node('button','Mostrar 50 más',{type:'button','data-history-more':'',hidden:''});
     more.addEventListener('click',()=>{box.historyLimit=Math.min(1000,box.historyLimit+50);refresh();});
-    box.append(button,message,node('ol',null,{class:'history-list'}),more,this.historyDeleteControls('sensor',row.key,refresh));
+    box.append(button,message,node('ol',null,{class:'history-list'}),more);
+    if(!global) box.append(this.historyDeleteControls('sensor',row.key,refresh));
     return box;
   }
   selectionStatus() {

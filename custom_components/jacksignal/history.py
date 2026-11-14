@@ -151,7 +151,7 @@ def query(hass, sensor, filters=None, limit=50):
     cutoff = datetime.now(UTC) - timedelta(days=days) if days else None
     result = []
     for item in reversed(hass.data.get(DATA, ())):
-        if item["sensor"] != sensor or status != "all" and item["status"] != status:
+        if (sensor is not None and item["sensor"] != sensor) or (status != "all" and item["status"] != status):
             continue
         voice = "voz" in item["source"].casefold()
         if kind == "voice" and not voice or kind == "audio" and voice:

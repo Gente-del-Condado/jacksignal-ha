@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 0.19.0
+
+- Vista global del historial con todos los sensores en orden cronológico inverso e identificación del sensor en cada registro.
+- Selector de sensor combinable con resultado, audio/voz, prioridad, periodo y texto; conserva acceso a registros de entidades eliminadas.
+- Actualización cada cinco segundos mientras está abierta y paginación de 50 registros, sin depender de las fichas visibles.
+- Comparte el almacenamiento, retención y límites existentes; no modifica prioridades de Alarmo.
+
 ## 0.18.0
 
 - Historial persistente en Home Assistant, con retención configurable entre 1 y 365 días (7 por defecto) y límite global de 1.000 registros.
