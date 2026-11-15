@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## 0.19.1
+
+- Documentación y enlaces de las distribuciones con sus nombres actuales.
+- Aclarados el origen en Forgejo, los publicadores de GitHub y la diferencia entre integración e instalador.
+
+
 ## 0.19.0
 
 - Vista global del historial con todos los sensores en orden cronológico inverso e identificación del sensor en cada registro.
@@ -105,7 +111,7 @@
 
 ## 0.8.2
 
-- Simplificadas las instrucciones de instalación: tienda Mis-app, HACS / Marketplace mediante jacksignal-ha o copia manual.
+- Simplificadas las instrucciones de instalación: tienda Mis_app_ha, HACS / Marketplace mediante jacksignal_ha o copia manual.
 - Retiradas las referencias a gestores externos de las guías de JackSignal para evitar confundirlos con requisitos del reproductor.
 - Sin cambios en el audio, las prioridades ni la sincronización de los catálogos.
 

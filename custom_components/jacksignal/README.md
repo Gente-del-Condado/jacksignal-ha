@@ -4,21 +4,34 @@ Avisos, música y voz por la salida de audio local de Home Assistant: sonidos de
 
 JackSignal utiliza **FFmpeg y la salida PulseAudio predeterminada**. Puede ser el jack de una Raspberry Pi; la salida se elige en el sistema de audio del equipo. La configuración se realiza con formularios nativos de Home Assistant, disponibles en español e inglés.
 
+## Qué contiene este repositorio
+
+La distribución pública [jacksignal_ha](https://github.com/Gente-del-Condado/jacksignal_ha)
+contiene la integración de Home Assistant, sus imágenes, documentación y
+metadatos. El instalador para Home Assistant OS se obtiene por separado en
+[Mis_app_ha](https://github.com/Gente-del-Condado/Mis_app_ha).
+
+Las fuentes se mantienen en [Forgejo](https://gentedelcondado.es/forgejo/wolfbelmi88/jacksignal)
+con acceso autorizado, se replican al principal privado de GitHub y sus Actions
+publican aquí solo después de pasar las pruebas. La misma integración se copia
+a [Mis_componente_ha](https://github.com/Gente-del-Condado/Mis_componente_ha)
+para Private Git Manager. Esta copia pública no es el lugar de desarrollo.
+
 ## Elegir cómo instalar
 
 Usa **una sola vía para gestionar las actualizaciones** de la integración.
 
 | Vía | Repositorio | Qué instala |
 | --- | --- | --- |
-| Tienda de aplicaciones de Home Assistant OS | [Mis-app](https://github.com/Gente-del-Condado/Mis-app) | **Instalador de JackSignal**, que copia la integración al iniciarlo |
-| HACS / Marketplace, como repositorio personalizado de integración | [jacksignal-ha](https://github.com/Gente-del-Condado/jacksignal-ha) | La integración directamente |
-| Manual | [jacksignal-ha](https://github.com/Gente-del-Condado/jacksignal-ha) | Copia de `custom_components/jacksignal` a `/config/custom_components/jacksignal` |
+| Tienda de aplicaciones de Home Assistant OS | [Mis_app_ha](https://github.com/Gente-del-Condado/Mis_app_ha) | **Instalador de JackSignal**, que copia la integración al iniciarlo |
+| HACS / Marketplace, como repositorio personalizado de integración | [jacksignal_ha](https://github.com/Gente-del-Condado/jacksignal_ha) | La integración directamente |
+| Manual | [jacksignal_ha](https://github.com/Gente-del-Condado/jacksignal_ha) | Copia de `custom_components/jacksignal` a `/config/custom_components/jacksignal` |
 
-Para instalar desde HACS / Marketplace utiliza **jacksignal-ha**. Añadir este repositorio personalizado no significa que JackSignal esté incluido en el catálogo predeterminado.
+Para instalar desde HACS / Marketplace utiliza **jacksignal_ha**. Añadir este repositorio personalizado no significa que JackSignal esté incluido en el catálogo predeterminado.
 
 ### Con Instalador de JackSignal
 
-1. Añade `https://github.com/Gente-del-Condado/Mis-app` en los repositorios de la tienda de aplicaciones. En versiones anteriores se llama tienda de complementos.
+1. Añade `https://github.com/Gente-del-Condado/Mis_app_ha` en los repositorios de la tienda de aplicaciones. En versiones anteriores se llama tienda de complementos.
 2. Instala **Instalador de JackSignal**, pulsa **Iniciar** y comprueba el registro.
 3. El instalador termina y se detiene: es su funcionamiento normal. Reinicia Home Assistant.
 4. Ve a **Ajustes → Dispositivos y servicios → Añadir integración → JackSignal**.
@@ -27,13 +40,13 @@ Para actualizar: actualiza la aplicación, vuelve a pulsar **Iniciar**, comprueb
 
 ### Con Marketplace (Home Assistant 2026.11 o posterior)
 
-Añade `https://github.com/Gente-del-Condado/jacksignal-ha` como repositorio personalizado de categoría **Integración** e instálalo. En una primera instalación, si JackSignal no se había cargado antes, Marketplace puede abrir su configuración inmediatamente: JackSignal dispone de configuración gráfica y no necesita un reinicio previo en ese caso.
+Añade `https://github.com/Gente-del-Condado/jacksignal_ha` como repositorio personalizado de categoría **Integración** e instálalo. En una primera instalación, si JackSignal no se había cargado antes, Marketplace puede abrir su configuración inmediatamente: JackSignal dispone de configuración gráfica y no necesita un reinicio previo en ese caso.
 
 Si ya estaba cargado o estás actualizando, sigue el aviso de reinicio que muestre Home Assistant. No confundas esta instalación con **Instalador de JackSignal**, que copia archivos y sigue requiriendo iniciar el instalador y reiniciar Home Assistant. Si eliges la instalación manual, reinicia después de copiar el código.
 
 Marketplace ya no administra AppDaemon ni Python Scripts. JackSignal es una **integración**, no uno de esos tipos, por lo que ese cambio no le afecta. [Funcionamiento oficial de Marketplace](https://contributors.home-assistant.io/marketplace/how-it-works/).
 
-[Instalar desde Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Gente-del-Condado&repository=jacksignal-ha&category=integration).
+[Instalar desde Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Gente-del-Condado&repository=jacksignal_ha&category=integration).
 
 Se toma **Home Assistant 2026.11.0** como versión mínima de esta distribución. En Home Assistant Container, instala la integración directamente y proporciona FFmpeg, FFprobe y acceso a PulseAudio en el contenedor. Instalar el código por sí solo no proporciona la salida de audio.
 
@@ -256,10 +269,10 @@ La prioridad depende de la regla configurada: un aviso de Alarmo configurado en 
 
 Si un sensor no avisa, comprueba por separado su sonido y condición de apertura y cierre. En el formulario puedes consultar el estado interno y seleccionar el que realmente significa abierto. Cambiar esta selección no cambia el sensor ni su configuración en Alarmo. Puedes activar el registro de depuración de la integración desde Dispositivos y servicios, reproducir el problema y desactivarlo para descargar el registro: muestra si el aviso fue descartado por condición, falta de sonido o prioridad, o si otro audio lo interrumpió.
 
-Para informar de un problema, indica versiones de Home Assistant y JackSignal, método de instalación, pasos y registros relevantes, sin credenciales: [incidencias](https://github.com/Gente-del-Condado/jacksignal-ha/issues).
+Para informar de un problema, indica versiones de Home Assistant y JackSignal, método de instalación, pasos y registros relevantes, sin credenciales: [incidencias](https://github.com/Gente-del-Condado/jacksignal_ha/issues).
 
 ## Estado y desarrollo
 
 La instalación y la reproducción local han sido probadas en una Raspberry Pi 4B. Las pruebas automáticas cubren prioridades, reglas, voz, formularios, instalación y DLNA. La voz con cada motor real, la pausa/reanudación física y la compatibilidad de emisores/redes DLNA requieren validación en el equipo correspondiente.
 
-[Proyecto de origen](https://github.com/Gente-del-Condado/jacksignal) · [Código principal en Forgejo](https://gentedelcondado.es/forgejo/wolfbelmi88/jacksignal) · [Historial de versiones de la aplicación](https://github.com/Gente-del-Condado/Mis-app/blob/main/jacksignal_installer/CHANGELOG.md).
+[Proyecto de origen](https://github.com/Gente-del-Condado/jacksignal) · [Código principal en Forgejo](https://gentedelcondado.es/forgejo/wolfbelmi88/jacksignal) · [Historial de versiones de la aplicación](https://github.com/Gente-del-Condado/Mis_app_ha/blob/main/jacksignal_installer/CHANGELOG.md).
