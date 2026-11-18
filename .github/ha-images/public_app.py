@@ -11,6 +11,7 @@ import tempfile
 import forgejo_apps as apps
 from github_mirror import Mirror
 from distributions import publish_one
+from public_apps import validate_export
 
 
 def project():
@@ -47,10 +48,9 @@ def plan(repo):
 
 def snapshot(repo, folder):
     folder = Path(folder)
-    record = apps.validate(folder, repo)
-    expected = {apps.APPS[repo], 'distributions', 'receipt.json'}
-    if {p.name for p in folder.iterdir()} != expected:
-        raise ValueError('Contenido no autorizado en la exportación')
+    record = validate_export(folder, repo)
+    for name, mode in record['modes'].items():
+        (folder / apps.APPS[repo] / name).chmod(mode)
     record['public_format'] = 1
     record['source_repository'] = 'Gente-del-Condado/' + repo
     repository = 'Gente-del-Condado/' + repo + '_ha'
@@ -100,7 +100,7 @@ def main():
     elif args.action == 'prepare':
         apps.prepare(repo, args.source, args.output)
     elif args.action == 'check':
-        record = apps.validate(args.output, repo)
+        record = validate_export(args.output, repo)
         if Mirror(repo).branch() != record['sha']:
             raise ValueError('El espejo ha cambiado; no se publica el candidato')
     else:

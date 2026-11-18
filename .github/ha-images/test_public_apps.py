@@ -71,6 +71,17 @@ class PublicAppsTest(unittest.TestCase):
                 public_app.snapshot('pivigia', root)
             publish.assert_not_called()
 
+    def test_distribution_cannot_omit_its_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary, patch.object(public_app, 'publish_one') as publish:
+            root = Path(temporary)
+            record = self.fixture(root)
+            del record['distributions']
+            del record['distribution_modes']
+            (root / 'receipt.json').write_text(json.dumps(record))
+            with self.assertRaisesRegex(ValueError, 'Contenido no autorizado'):
+                public_app.snapshot('pivigia', root)
+            publish.assert_not_called()
+
     def test_public_consumer_verifies_bytes_and_origin_without_credentials(self):
         for case in ('valid', 'modified', 'wrong-origin'):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:

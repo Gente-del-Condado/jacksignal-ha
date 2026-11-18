@@ -20,6 +20,16 @@ def selected():
     return names
 
 
+def validate_export(folder, repo):
+    folder = Path(folder)
+    record = apps.validate(folder, repo)
+    if (not isinstance(record.get('distributions'), dict) or not record['distributions']
+            or not isinstance(record.get('distribution_modes'), dict)
+            or {p.name for p in folder.iterdir()} != {apps.APPS[repo], 'distributions', 'receipt.json'}):
+        raise ValueError('Contenido no autorizado en la exportación')
+    return record
+
+
 def download(repo, output):
     if repo not in apps.APPS:
         raise ValueError('Aplicación no autorizada')
@@ -36,10 +46,9 @@ def download(repo, output):
         raise ValueError('Contexto público demasiado grande')
     folder = Path(output) / repo
     apps.extract(raw, folder)
-    record = apps.validate(folder, repo)
+    record = validate_export(folder, repo)
     if (record.get('public_format') != 1
-            or record.get('source_repository') != 'Gente-del-Condado/' + repo
-            or {p.name for p in folder.iterdir()} != {apps.APPS[repo], 'distributions', 'receipt.json'}):
+            or record.get('source_repository') != 'Gente-del-Condado/' + repo):
         raise ValueError('Recibo público no autorizado')
     return record
 
