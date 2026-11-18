@@ -1,0 +1,32 @@
+abi <abi/3.0>,
+#include <tunables/global>
+
+# Solo el instalador: el audio y la voz pertenecen a la integración de Core.
+profile jacksignal_installer flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # El instalador no necesita red, aunque una abstracción pudiera autorizarla.
+  deny network,
+
+  / r,
+  /dev/init rix,
+  /sbin/docker-init rix,
+  /usr/local/bin/{python,python3,python3.13} rix,
+  /usr/local/lib/libpython3.13.so{,.1.0} mr,
+  /usr/local/lib/python3.13/{,**} mr,
+  /{,usr/}lib/{,**} mr,
+  /installer/{,**} r,
+  /etc/{passwd,group,localtime} r,
+  /proc/ r,
+  owner /proc/[0-9]*/{stat,status,maps,cmdline,limits,attr/current} r,
+  owner /proc/[0-9]*/fd/ r,
+
+  /homeassistant/ rw,
+  /homeassistant/configuration.yaml r,
+  /homeassistant/custom_components/ rw,
+  /homeassistant/custom_components/jacksignal/{,**} rwk,
+  # Preparación, intercambio atómico y recuperación de la versión anterior.
+  /homeassistant/.jacksignal-stage-*/{,**} rwk,
+  /homeassistant/.jacksignal-previous/{,**} rwk,
+  /tmp/{,**} rwk,
+}

@@ -1,0 +1,317 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add JackSignal",
+        "description": "Create a player for the local audio output. You can link Alarmo under Configure."
+      }
+    },
+    "abort": {
+      "already_configured": "The player is already installed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JackSignal",
+        "description": "Upload clips in Media → My media. Use this menu to test them and choose which ones Alarmo should play.",
+        "menu_options": {
+          "alarm": "Link Alarmo",
+          "event": "Assign sound to an Alarmo event",
+          "sensor": "Assign sounds to a sensor",
+          "preview": "Test a sound on the jack",
+          "dlna": "DLNA: network and port",
+          "overview": "Assignment summary (text)",
+          "speech": "Configure sensor speech",
+          "direct": "Send audio",
+          "dlna_status": "DLNA diagnostics",
+          "manage": "Manage alerts"
+        }
+      },
+      "alarm": {
+        "title": "Link Alarmo",
+        "description": "Choose your Alarmo panel. Clear the selection to disconnect it.",
+        "data": {
+          "alarm": "Alarm panel"
+        }
+      },
+      "event": {
+        "title": "Choose an event",
+        "data": {
+          "event": "Alarmo event"
+        }
+      },
+      "event_sound": {
+        "title": "Event sound and priority",
+        "description": "Choose a sound from My media. Clear the sound to remove the rule.",
+        "data": {
+          "sound": "Sound",
+          "priority": "Priority",
+          "repeat": "Repeat while the alarm is triggered",
+          "enabled": "Alert enabled (disabling keeps its configuration)"
+        }
+      },
+      "sensor": {
+        "title": "Choose a sensor",
+        "description": "Choose any binary sensor, including sensors outside Alarmo. Set separate activation/opening and deactivation/closing sounds. Only disarmed mode and failed arming require a linked panel.",
+        "data": {
+          "sensor": "Sensor"
+        }
+      },
+      "sensor_sound": {
+        "title": "Sensor sound and priority",
+        "description": "Sensor: {sensor}. Current raw state: **{state}** (reopen this form to refresh).\n\n**Each alert needs its own sound.** To play both, select an OPENING file and a CLOSING file; they may be the same. Always does not select a file.\n\nStates are suggested automatically for a new sensor. Home Assistant normally uses on = open and off = closed. Review other vocabularies: true/false does not guarantee physical polarity. You can change both states or enter distinct custom values. Saved choices are preserved when editing.\n\nTo leave an alert without a sound, select Never for that alert. To delete the rule, set both to Never and clear both files. Failed arming uses the OPENING sound.",
+        "data": {
+          "sound": "OPENING · Sound (select a file)",
+          "priority": "Priority",
+          "failed_to_arm": "Play when preventing Alarmo from arming",
+          "on_open": "OPENING · When to play",
+          "close_sound": "CLOSING · Sound (select another or the same file)",
+          "on_close": "CLOSING · When to play",
+          "open_state": "OPENING · Sensor state",
+          "closed_state": "CLOSING · Sensor state",
+          "enabled": "Alert enabled (disabling keeps its configuration)"
+        }
+      },
+      "preview": {
+        "title": "Test audio",
+        "description": "Choose a clip and submit to play it on the jack. {status}",
+        "data": {
+          "sound": "Sound"
+        }
+      },
+      "dlna": {
+        "title": "DLNA: network and port",
+        "description": "Choose an IPv4 address on an interface visible to Home Assistant (Ethernet, Wi-Fi or VPN). You can enter another address belonging to this host. For VPNs without multicast, disable SSDP discovery and add http://IP:PORT/description.xml in a sender supporting manual receivers. The VPN must allow connections in both directions and access to the audio URL. A VPN in another container may require a route to the local IP. The receiver has no password: use trusted networks only. Alarmo retains priority.\n\nChoose a different name per device, e.g. “JackSignal · Living room”. It appears in BubbleUPnP and other DLNA senders, independently of the Home Assistant entity name. Saving restarts the DLNA receiver and may stop its music; refresh the sender device list afterwards. The receiver identifier is preserved.",
+        "data": {
+          "enabled": "Enable receiver",
+          "address": "Listening interface / IPv4",
+          "port": "HTTP port",
+          "discovery": "Automatic SSDP discovery (UDP 1900)",
+          "name": "Receiver name on the network"
+        }
+      },
+      "overview": {
+        "title": "Sound assignments",
+        "description": "Linked panel: {alarm}\n\n**Alarmo events**\n\n- Alarm triggered: {triggered}\n- Entry delay: {pending}\n- Exit delay: {arming}\n- Armed: {armed}\n- Disarmed: {disarmed}\n- Failed to arm: {failed_to_arm}\n\n**Sensors**\n\n{sensors}\n\nShows Home Assistant opening sensors and any other sensors with saved rules, not the list of sensors linked to Alarmo.\n\n— = No sound assigned. P0 = Low, P1 = Normal, P2 = High, P3 = Critical. ↻ = Repeat.\n\nEach sensor shows its playback conditions. Always mode works without Alarmo; disarmed mode and failed arming require a linked panel. Use the buttons below to view or edit an event or sensor selection.\n\n**Speech alerts**\n\n{speech}",
+        "menu_options": {
+          "event": "Edit event",
+          "sensor": "Edit sensor",
+          "alarm": "Link Alarmo",
+          "init": "Back",
+          "speech": "Edit speech alerts"
+        }
+      },
+      "speech": {
+        "title": "Choose a sensor for speech",
+        "description": "Choose any Home Assistant sensor, without requiring Alarmo. Configure one speech rule per sensor; return here to edit it. A text-to-speech integration must already be configured.",
+        "data": {
+          "sensor": "Sensor"
+        }
+      },
+      "speech_rule": {
+        "title": "Speech and conditions",
+        "description": "Sensor: {sensor}. {status}\n\nSpeech is: before text + current value + optional unit + after text. Example: “The room temperature is” + 22 + “degrees Celsius” (after text, with unit disabled). No YAML or templates. Uses the engine default voice/language.\n\nTest without saving reads the current value; choose Save afterwards to keep edits. Thresholds trigger only on crossing. The minimum interval drops frequent alerts. Unavailable states, startup and reconnection are ignored. Manual mode exposes the JackSignal · Speak sensor value action for any automation.",
+        "data": {
+          "engine": "Speech engine",
+          "before": "Text before the value",
+          "after": "Text after the value",
+          "unit": "Append sensor unit",
+          "trigger": "When to speak",
+          "threshold": "Numeric threshold (above/below only)",
+          "cooldown": "Minimum interval between alerts (seconds)",
+          "priority": "Priority",
+          "operation": "Action on submit",
+          "enabled": "Alert enabled (disabling keeps its configuration)"
+        }
+      },
+      "direct": {
+        "title": "Send audio",
+        "description": "Audio only. Uses low priority (P0): higher-priority alerts and protected sirens are never interrupted. A new request replaces other low-priority playback. Stop affects only playback from this screen.",
+        "menu_options": {
+          "direct_upload": "Upload audio file",
+          "direct_url": "Play audio URL",
+          "direct_media": "Choose from My media",
+          "direct_stop": "Stop direct playback only",
+          "init": "Back"
+        }
+      },
+      "direct_upload": {
+        "title": "Upload audio file",
+        "description": "Choose a file up to 100 MB. Valid audio is saved in My media → jacksignal with a unique name, even if an alert blocks playback. Reuse or delete it from My media. Select the file again after a failed request. {status}\n\n✓ = playback accepted; it does not confirm audible output. Contents are checked: video and files without audio are rejected. Album artwork is allowed.",
+        "data": {
+          "file": "File"
+        }
+      },
+      "direct_url": {
+        "title": "Play audio URL",
+        "description": "Paste a direct HTTP(S) audio or radio URL reachable from Home Assistant. Spotify or YouTube web pages are not audio URLs. The URL is not saved in configuration. {status}\n\n✓ = playback accepted; it does not confirm audible output. Contents are checked: video and files without audio are rejected. Album artwork is allowed.",
+        "data": {
+          "url": "URL"
+        }
+      },
+      "direct_media": {
+        "title": "Choose from My media",
+        "description": "Choose an audio file already saved in My media. {status}\n\n✓ = playback accepted; it does not confirm audible output. Contents are checked: video and files without audio are rejected. Album artwork is allowed.",
+        "data": {
+          "sound": "Audio"
+        }
+      },
+      "dlna_status": {
+        "title": "DLNA diagnostics",
+        "description": "**Current state** (✓ active / — inactive)\n\n- Advertised name: {name}\n- HTTP receiver: {running}\n- SSDP discovery: {discovery}\n- Description: {url}\n- Audio active: {playback} · Priority: {priority}\n- Last HTTP request (UTC time, IP, method, result): {last_request}\n- Last observed DLNA error: {last_error}\n\nSelect DLNA diagnostics to refresh. Data resets when the integration reloads. Enabled SSDP does not prove the phone receives announcements. The last request may come from a browser rather than a controller. Audio URLs and credentials are not displayed.\n\nUse an app supporting DLNA renderers, such as BubbleUPnP. VPN multicast discovery typically needs additional configuration.",
+        "menu_options": {
+          "dlna_status": "DLNA diagnostics",
+          "dlna": "Configure DLNA",
+          "direct": "Send audio",
+          "init": "Back"
+        }
+      },
+      "manage": {
+        "title": "Manage alerts",
+        "description": "[Open Manage alerts](/jacksignal). Administrators can also open JackSignal from the sidebar. Search, filter, edit, test or disable rules without deleting them. Tests use P0 and respect Alarmo priorities. The panel is in Spanish.",
+        "menu_options": {
+          "init": "Back"
+        }
+      }
+    },
+    "error": {
+      "local_sound_required": "Choose an existing audio file from My media.",
+      "higher_priority": "A higher-priority sound is playing.",
+      "ffmpeg_unavailable": "FFmpeg could not start.",
+      "dlna_address": "Check the LAN IPv4, port and FFprobe installation.",
+      "dlna_start": "Could not start DLNA. Check that the IP belongs to this host and the port is free.",
+      "speech_threshold": "Enter a valid numeric threshold.",
+      "speech_engine": "Choose a speech engine. If none appear, configure a TTS integration first.",
+      "speech_failed": "Could not generate or play speech. Check the sensor, TTS engine and Home Assistant internal URL.",
+      "sensor_sound_required": "Select a sound for this alert or set its condition to Never.",
+      "same_sensor_states": "Opening and closing states must be different.",
+      "invalid_sensor_state": "Enter a valid state; unknown and unavailable are reserved for unavailable sensors.",
+      "direct_audio": "Could not validate audio. Check the file or URL; video is not supported.",
+      "direct_unavailable": "Could not access the file or start FFprobe/FFmpeg. Check storage and logs.",
+      "dlna_name": "Enter a name of 1–64 characters without line breaks or control characters."
+    }
+  },
+  "selector": {
+    "priority": {
+      "options": {
+        "low": "Low",
+        "normal": "Normal",
+        "high": "High",
+        "critical": "Critical"
+      }
+    },
+    "alarm_event": {
+      "options": {
+        "triggered": "Alarm triggered",
+        "pending": "Entry delay",
+        "arming": "Exit delay",
+        "armed": "Armed",
+        "disarmed": "Disarmed",
+        "failed_to_arm": "Failed to arm"
+      }
+    },
+    "on_open": {
+      "options": {
+        "never": "Never on opening",
+        "disarmed": "On opening, only while disarmed",
+        "always": "On opening, always (no Alarmo required)"
+      }
+    },
+    "sensor_summary": {
+      "options": {
+        "failed_to_arm": "When preventing arming",
+        "disabled": "No active triggers",
+        "close": "Closing / deactivation",
+        "paused": "Disabled"
+      }
+    },
+    "on_close": {
+      "options": {
+        "never": "Never on closing",
+        "disarmed": "On closing, only while disarmed",
+        "always": "On closing, always (no Alarmo required)"
+      }
+    },
+    "speech_trigger": {
+      "options": {
+        "manual": "Manual / from automation",
+        "change": "Every value change",
+        "above": "Crossing above a threshold",
+        "below": "Crossing below a threshold"
+      }
+    },
+    "speech_operation": {
+      "options": {
+        "save": "Save",
+        "preview": "Test without saving",
+        "delete": "Delete rule"
+      }
+    },
+    "open_state": {
+      "options": {
+        "on": "on → open (Home Assistant)",
+        "off": "off → open (inverted)",
+        "true": "true → open",
+        "false": "false → open",
+        "open": "open → open",
+        "closed": "closed → open (inverted)"
+      }
+    }
+  },
+  "services": {
+    "play_sound": {
+      "name": "Play alert",
+      "description": "Play a sound through JackSignal according to its priority.",
+      "fields": {
+        "sound": {
+          "name": "Sound",
+          "description": "Choose the audio to play."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Equal or higher priorities replace the current sound."
+        }
+      }
+    },
+    "speak_sensor": {
+      "name": "Speak sensor value",
+      "description": "Read the current value using the phrase, engine and priority saved in JackSignal. No YAML or Alarmo required.",
+      "fields": {
+        "sensor": {
+          "name": "Sensor",
+          "description": "Sensor with a saved speech rule."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "invalid_media": {
+      "message": "Choose supported audio from My media or an HTTP(S) audio URL."
+    },
+    "missing_media": {
+      "message": "The selected audio could not be found."
+    },
+    "ffmpeg_unavailable": {
+      "message": "FFmpeg could not start."
+    },
+    "audio_unavailable": {
+      "message": "Could not control the PulseAudio output volume."
+    },
+    "speech_sensor_unavailable": {
+      "message": "The sensor has no available value."
+    },
+    "speech_engine_unavailable": {
+      "message": "Configure a TTS engine in Home Assistant."
+    },
+    "speech_rule_missing": {
+      "message": "Configure speech for this sensor in JackSignal first."
+    },
+    "higher_priority": {
+      "message": "Not played: a higher-priority alert or protected siren is active. Wait until it finishes or stop playback from Home Assistant."
+    },
+    "rule_disabled": {
+      "message": "This alert is disabled. Enable it in Manage alerts."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+name: Instalador de JackSignal
+version: "0.19.3"
+slug: jacksignal_installer
+description: Instala JackSignal para audio local, avisos de Alarmo, voz de sensores y recepción DLNA exclusiva de audio.
+url: https://github.com/Gente-del-Condado/jacksignal_ha
+homeassistant: "2026.11.0"
+arch:
+  - aarch64
+  - amd64
+startup: once
+boot: manual_only
+init: true
+map:
+  - type: homeassistant_config
+    read_only: false

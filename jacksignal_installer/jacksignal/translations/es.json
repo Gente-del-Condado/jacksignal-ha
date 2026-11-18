@@ -1,0 +1,317 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Añadir JackSignal",
+        "description": "Crea un reproductor para la salida de audio local. Puedes vincular Alarmo en Configurar."
+      }
+    },
+    "abort": {
+      "already_configured": "El reproductor ya está instalado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JackSignal",
+        "description": "Sube los clips en Multimedia → Mis archivos multimedia. Usa este menú para probarlos y elegir cuáles debe reproducir Alarmo.",
+        "menu_options": {
+          "alarm": "Vincular Alarmo",
+          "event": "Asignar sonido a un evento de Alarmo",
+          "sensor": "Asignar sonidos a un sensor",
+          "preview": "Probar un sonido por el jack",
+          "dlna": "DLNA: red y puerto",
+          "overview": "Resumen de asignaciones (texto)",
+          "speech": "Configurar voz de un sensor",
+          "direct": "Enviar audio",
+          "dlna_status": "Diagnóstico DLNA",
+          "manage": "Gestionar avisos"
+        }
+      },
+      "alarm": {
+        "title": "Vincular Alarmo",
+        "description": "Elige tu panel de Alarmo. Borra la selección para desvincularlo.",
+        "data": {
+          "alarm": "Panel de alarma"
+        }
+      },
+      "event": {
+        "title": "Elige un evento",
+        "data": {
+          "event": "Evento de Alarmo"
+        }
+      },
+      "event_sound": {
+        "title": "Sonido y prioridad del evento",
+        "description": "Elige un sonido de Mis archivos multimedia. Borra el sonido para eliminar la regla.",
+        "data": {
+          "sound": "Sonido",
+          "priority": "Prioridad",
+          "repeat": "Repetir mientras la alarma esté disparada",
+          "enabled": "Aviso activado (desactivar conserva la configuración)"
+        }
+      },
+      "sensor": {
+        "title": "Elige un sensor",
+        "description": "Elige cualquier sensor binario, aunque no pertenezca a Alarmo. Configura sonidos independientes de apertura/activación y cierre/desactivación. Solo el modo «desarmada» y el fallo al armar requieren un panel vinculado.",
+        "data": {
+          "sensor": "Sensor"
+        }
+      },
+      "sensor_sound": {
+        "title": "Sonido y prioridad del sensor",
+        "description": "Sensor: {sensor}. Estado interno actual: **{state}** (reabre el formulario para refrescarlo).\n\n**Cada aviso necesita su propio sonido.** Para que suenen ambos, selecciona un archivo en APERTURA y otro en CIERRE; pueden ser el mismo. «Siempre» no selecciona un archivo.\n\nLos estados se proponen automáticamente al añadir el sensor. En Home Assistant, normalmente on = abierto y off = cerrado. Revisa la propuesta si tu sensor usa otros valores: true/false no garantiza una polaridad física. Puedes cambiar ambos estados o escribir otros distintos. Los valores guardados no se sustituyen al editar.\n\nPara dejar un aviso sin sonido, selecciona «Nunca» en ese aviso. Para eliminar la regla, pon ambos en «Nunca» y borra los dos archivos. El fallo al armar utiliza el sonido de APERTURA.",
+        "data": {
+          "sound": "APERTURA · Sonido (selecciona un archivo)",
+          "priority": "Prioridad",
+          "failed_to_arm": "Avisar si impide armar Alarmo",
+          "on_open": "APERTURA · Cuándo avisar",
+          "close_sound": "CIERRE · Sonido (selecciona otro o el mismo archivo)",
+          "on_close": "CIERRE · Cuándo avisar",
+          "open_state": "APERTURA · Estado del sensor",
+          "closed_state": "CIERRE · Estado del sensor",
+          "enabled": "Aviso activado (desactivar conserva la configuración)"
+        }
+      },
+      "preview": {
+        "title": "Probar audio",
+        "description": "Elige un clip y pulsa Enviar para reproducirlo por el jack. {status}",
+        "data": {
+          "sound": "Sonido"
+        }
+      },
+      "dlna": {
+        "title": "DLNA: red y puerto",
+        "description": "Elige una IPv4 de una interfaz visible para Home Assistant (Ethernet, Wi-Fi o VPN). Puedes escribir otra IP del mismo equipo. Para VPN sin multicast, desactiva el descubrimiento SSDP y añade http://IP:PUERTO/description.xml en un emisor que admita receptores manuales. La VPN debe permitir las conexiones en ambos sentidos y el acceso a la URL del audio. Una VPN en otro contenedor puede requerir una ruta a la IP local. El receptor no tiene contraseña: úsalo solo en redes de confianza. Alarmo mantiene su prioridad.\n\nElige un nombre distinto por equipo, por ejemplo «JackSignal · Salón». Aparece en BubbleUPnP y otros emisores DLNA. No cambia el nombre de la entidad de Home Assistant. Guardarlo reinicia el receptor DLNA y puede detener su música; después actualiza la lista de dispositivos del emisor. El identificador del receptor se conserva.",
+        "data": {
+          "enabled": "Activar receptor",
+          "address": "Interfaz / IPv4 de escucha",
+          "port": "Puerto HTTP",
+          "discovery": "Descubrimiento automático SSDP (UDP 1900)",
+          "name": "Nombre del receptor en la red"
+        }
+      },
+      "overview": {
+        "title": "Sonidos asignados",
+        "description": "Panel vinculado: {alarm}\n\n**Eventos de Alarmo**\n\n- Alarma disparada: {triggered}\n- Cuenta atrás de entrada: {pending}\n- Cuenta atrás de salida: {arming}\n- Alarma armada: {armed}\n- Alarma desarmada: {disarmed}\n- Fallo al armar: {failed_to_arm}\n\n**Sensores**\n\n{sensors}\n\nSe muestran los sensores de apertura de Home Assistant y cualquier otro sensor con una regla guardada; no es la lista de sensores vinculados a Alarmo.\n\n— = Sin sonido asignado. P0 = Baja, P1 = Normal, P2 = Alta, P3 = Crítica. ↻ = Repetición.\n\nCada sensor muestra sus condiciones de reproducción. El modo «siempre» funciona sin Alarmo; el modo «desarmada» y el fallo al armar requieren un panel vinculado. Para ver o cambiar una selección, elige el evento o sensor en los botones siguientes.\n\n**Avisos de voz**\n\n{speech}",
+        "menu_options": {
+          "event": "Editar evento",
+          "sensor": "Editar sensor",
+          "alarm": "Vincular Alarmo",
+          "init": "Volver",
+          "speech": "Editar avisos de voz"
+        }
+      },
+      "speech": {
+        "title": "Elegir sensor para voz",
+        "description": "Elige un sensor de Home Assistant, sin necesidad de Alarmo. Puedes crear una regla de voz por sensor y volver aquí para editarla. Necesitas una integración de texto a voz configurada previamente.",
+        "data": {
+          "sensor": "Sensor"
+        }
+      },
+      "speech_rule": {
+        "title": "Voz y condiciones",
+        "description": "Sensor: {sensor}. {status}\n\nLa frase será: texto anterior + valor actual + unidad (opcional) + texto posterior. Ejemplo: «La temperatura del salón es» + 22 + «grados Celsius» (en texto posterior y sin añadir unidad). No escribas YAML ni plantillas. Se usa la voz/idioma predeterminados del motor.\n\n«Probar sin guardar» lee el valor actual; después elige Guardar para conservar los cambios. Los umbrales avisan solo al cruzarlos, no continuamente. El intervalo mínimo descarta avisos demasiado seguidos. Se ignoran valores no disponibles, el inicio y las reconexiones. «Solo manual» permite usar la acción JackSignal · Decir valor del sensor desde cualquier automatización.",
+        "data": {
+          "engine": "Motor de voz",
+          "before": "Texto antes del valor",
+          "after": "Texto después del valor",
+          "unit": "Añadir la unidad del sensor",
+          "trigger": "Cuándo hablar",
+          "threshold": "Umbral numérico (solo superar/bajar)",
+          "cooldown": "Intervalo mínimo entre avisos (segundos)",
+          "priority": "Prioridad",
+          "operation": "Qué hacer al enviar",
+          "enabled": "Aviso activado (desactivar conserva la configuración)"
+        }
+      },
+      "direct": {
+        "title": "Enviar audio",
+        "description": "Solo audio. Se reproduce con prioridad baja (P0): no interrumpe avisos de mayor prioridad ni sirenas protegidas. Un nuevo envío sustituye otra reproducción de prioridad baja. Detener solo afecta a los envíos de esta pantalla.",
+        "menu_options": {
+          "direct_upload": "Subir archivo de audio",
+          "direct_url": "Reproducir URL de audio",
+          "direct_media": "Elegir de Mis medios",
+          "direct_stop": "Detener solo el envío directo",
+          "init": "Volver"
+        }
+      },
+      "direct_upload": {
+        "title": "Subir archivo de audio",
+        "description": "Selecciona un archivo de hasta 100 MB. Los audios válidos se guardan en Mis medios → jacksignal con un nombre único, incluso si un aviso impide reproducirlos. Puedes reutilizarlos o eliminarlos desde Mis medios. Si falla el envío, vuelve a seleccionar el archivo. {status}\n\n✓ = reproducción aceptada; no confirma que el altavoz haya sonado. Se valida el contenido: se rechazan vídeos y archivos sin audio. Las portadas de álbum están permitidas.",
+        "data": {
+          "file": "Archivo"
+        }
+      },
+      "direct_url": {
+        "title": "Reproducir URL de audio",
+        "description": "Pega una URL HTTP(S) directa a un audio o radio, accesible desde Home Assistant. No sirve una página web de Spotify o YouTube. La URL no se guarda en la configuración. {status}\n\n✓ = reproducción aceptada; no confirma que el altavoz haya sonado. Se valida el contenido: se rechazan vídeos y archivos sin audio. Las portadas de álbum están permitidas.",
+        "data": {
+          "url": "URL"
+        }
+      },
+      "direct_media": {
+        "title": "Elegir de Mis medios",
+        "description": "Elige un archivo de audio ya guardado en Mis medios. {status}\n\n✓ = reproducción aceptada; no confirma que el altavoz haya sonado. Se valida el contenido: se rechazan vídeos y archivos sin audio. Las portadas de álbum están permitidas.",
+        "data": {
+          "sound": "Audio"
+        }
+      },
+      "dlna_status": {
+        "title": "Diagnóstico DLNA",
+        "description": "**Estado actual** (✓ activo / — inactivo)\n\n- Nombre anunciado: {name}\n- Receptor HTTP: {running}\n- Descubrimiento SSDP: {discovery}\n- Descripción: {url}\n- Audio activo: {playback} · Prioridad: {priority}\n- Última petición HTTP (hora UTC, IP, método, resultado): {last_request}\n- Último error DLNA observado: {last_error}\n\nPulsa Diagnóstico DLNA para actualizar. Los datos se reinician al recargar la integración. SSDP activo indica que está habilitado, no demuestra que el móvil reciba los anuncios. La última petición puede ser del navegador y no necesariamente de un emisor. No se muestran URLs de audio ni credenciales.\n\nUsa un emisor compatible con receptores DLNA, como BubbleUPnP. Las VPN normalmente requieren configuración adicional para el descubrimiento multicast.",
+        "menu_options": {
+          "dlna_status": "Diagnóstico DLNA",
+          "dlna": "Configurar DLNA",
+          "direct": "Enviar audio",
+          "init": "Volver"
+        }
+      },
+      "manage": {
+        "title": "Gestionar avisos",
+        "description": "[Abrir el panel Gestionar avisos](/jacksignal). También aparece como JackSignal en la barra lateral para administradores.\n\nBusca, filtra, edita y prueba avisos. Activa o desactiva reglas sin borrar sus sonidos. Las pruebas usan P0 y respetan las prioridades de Alarmo. El panel está en español.",
+        "menu_options": {
+          "init": "Volver"
+        }
+      }
+    },
+    "error": {
+      "local_sound_required": "Elige un archivo de audio existente en Mis archivos multimedia.",
+      "higher_priority": "Está sonando un aviso de mayor prioridad.",
+      "ffmpeg_unavailable": "No se pudo iniciar FFmpeg.",
+      "dlna_address": "Comprueba la IPv4 local, el puerto y que FFprobe esté instalado.",
+      "dlna_start": "No se pudo iniciar DLNA. Comprueba que la IP pertenece a este equipo y que el puerto está libre.",
+      "speech_threshold": "Indica un umbral numérico válido.",
+      "speech_engine": "Elige un motor de voz. Si no aparece ninguno, configura antes una integración TTS en Home Assistant.",
+      "speech_failed": "No se pudo generar o reproducir la voz. Comprueba el sensor, el motor TTS y la URL interna de Home Assistant.",
+      "sensor_sound_required": "Selecciona un sonido para este aviso o cambia su condición a «Nunca».",
+      "same_sensor_states": "Apertura y cierre deben tener estados diferentes.",
+      "invalid_sensor_state": "Escribe un estado válido; unknown y unavailable se reservan para desconexiones.",
+      "direct_audio": "No se pudo validar el audio. Comprueba el archivo o la URL; no se admiten vídeos.",
+      "direct_unavailable": "No se pudo acceder al archivo o iniciar FFprobe/FFmpeg. Comprueba el almacenamiento y los registros.",
+      "dlna_name": "Escribe un nombre de 1 a 64 caracteres, sin saltos de línea ni caracteres de control."
+    }
+  },
+  "selector": {
+    "priority": {
+      "options": {
+        "low": "Baja",
+        "normal": "Normal",
+        "high": "Alta",
+        "critical": "Crítica"
+      }
+    },
+    "alarm_event": {
+      "options": {
+        "triggered": "Alarma disparada",
+        "pending": "Cuenta atrás de entrada",
+        "arming": "Cuenta atrás de salida",
+        "armed": "Alarma armada",
+        "disarmed": "Alarma desarmada",
+        "failed_to_arm": "Fallo al armar"
+      }
+    },
+    "on_open": {
+      "options": {
+        "never": "Nunca al abrir",
+        "disarmed": "Al abrir, solo con alarma desarmada",
+        "always": "Al abrir, siempre (sin requerir Alarmo)"
+      }
+    },
+    "sensor_summary": {
+      "options": {
+        "failed_to_arm": "Si impide armar",
+        "disabled": "Sin disparadores activos",
+        "close": "Cierre / desactivación",
+        "paused": "Desactivado"
+      }
+    },
+    "on_close": {
+      "options": {
+        "never": "Nunca al cerrar",
+        "disarmed": "Al cerrar, solo con alarma desarmada",
+        "always": "Al cerrar, siempre (sin requerir Alarmo)"
+      }
+    },
+    "speech_trigger": {
+      "options": {
+        "manual": "Solo manual / desde automatización",
+        "change": "Cada cambio de valor",
+        "above": "Al superar un umbral",
+        "below": "Al bajar de un umbral"
+      }
+    },
+    "speech_operation": {
+      "options": {
+        "save": "Guardar",
+        "preview": "Probar sin guardar",
+        "delete": "Eliminar regla"
+      }
+    },
+    "open_state": {
+      "options": {
+        "on": "on → abierto (Home Assistant)",
+        "off": "off → abierto (invertido)",
+        "true": "true → abierto",
+        "false": "false → abierto",
+        "open": "open → abierto",
+        "closed": "closed → abierto (invertido)"
+      }
+    }
+  },
+  "services": {
+    "play_sound": {
+      "name": "Reproducir aviso",
+      "description": "Reproduce un sonido por JackSignal según su prioridad.",
+      "fields": {
+        "sound": {
+          "name": "Sonido",
+          "description": "Elige el audio que quieres reproducir."
+        },
+        "priority": {
+          "name": "Prioridad",
+          "description": "Una prioridad igual o superior reemplaza el sonido actual."
+        }
+      }
+    },
+    "speak_sensor": {
+      "name": "Decir valor del sensor",
+      "description": "Lee el valor actual con la frase, motor y prioridad guardados en JackSignal. No requiere YAML ni Alarmo.",
+      "fields": {
+        "sensor": {
+          "name": "Sensor",
+          "description": "Sensor con una regla de voz guardada."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "invalid_media": {
+      "message": "Elige audio compatible de Mis archivos multimedia o una URL de audio HTTP(S)."
+    },
+    "missing_media": {
+      "message": "No se ha encontrado el audio seleccionado."
+    },
+    "ffmpeg_unavailable": {
+      "message": "No se pudo iniciar FFmpeg."
+    },
+    "audio_unavailable": {
+      "message": "No se pudo controlar el volumen de la salida PulseAudio."
+    },
+    "speech_sensor_unavailable": {
+      "message": "El sensor no tiene un valor disponible."
+    },
+    "speech_engine_unavailable": {
+      "message": "Configura un motor TTS en Home Assistant."
+    },
+    "speech_rule_missing": {
+      "message": "Configura primero la voz para este sensor en JackSignal."
+    },
+    "higher_priority": {
+      "message": "No se ha reproducido: hay un aviso de mayor prioridad o una sirena protegida. Espera a que termine o detén la reproducción desde Home Assistant."
+    },
+    "rule_disabled": {
+      "message": "Este aviso está desactivado. Actívalo desde Gestionar avisos."
+    }
+  }
+}

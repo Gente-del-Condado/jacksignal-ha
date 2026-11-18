@@ -1,0 +1,427 @@
+"""Administrator-only panel API for persistent alert rules and safe previews."""
+
+import asyncio
+from copy import deepcopy
+import hashlib
+import json
+import math
+from pathlib import Path
+
+from homeassistant.components import frontend, panel_custom, websocket_api
+from homeassistant.components.http import StaticPathConfig
+from homeassistant.exceptions import HomeAssistantError
+
+from . import history
+from .alarm import CLOSED_STATES
+from .const import ALARM, DEFAULT_PRIORITIES, DOMAIN, EVENTS, LOCAL_PREFIX, RULES, SENSOR_RULES, Priority
+from .media import AUDIO_EXTENSIONS, resolve
+from .selectors import validation as vol
+from .speech import (SPEECH_RULES, SPEECH_DEFAULTS, VOICE_FIELDS, audio_for, preferred_language, voice_settings, general_voice, effective_rule, piper_engines, suggested_state_labels)
+from .playback import validate_speed
+
+PANEL = "jacksignal"
+DATA = "jacksignal_panel"
+EVENT_NAMES = dict(zip(EVENTS, ("Alarma disparada", "Cuenta atrás de entrada", "Cuenta atrás de salida", "Alarma armada", "Alarma desarmada", "Fallo al armar")))
+SECTIONS = {"alarm": RULES, "sensor": SENSOR_RULES, "speech": SPEECH_RULES}
+
+
+def revision(options):
+    return hashlib.sha256(json.dumps(dict(options), sort_keys=True, default=dict).encode()).hexdigest()
+
+
+def rule_defaults(hass, kind, key):
+    if kind == "alarm":
+        return {"enabled": True, "priority": DEFAULT_PRIORITIES[key].name.lower(), "repeat": key == "triggered"}
+    if kind == "speech":
+        binary = key.startswith("binary_sensor.")
+        return {"enabled": True, "priority": "low", "before": "", "after": "", "unit": True, "trigger": "change" if binary else "manual", "cooldown": 0 if binary else 60, "speed": 1.0, "use_defaults": True}
+    from .config_flow import suggested_sensor_states
+    opened, closed = suggested_sensor_states(hass.states.get(key))
+    return {"enabled": True, "priority": "high", "open_state": opened, "closed_state": closed,
+            "on_open": "never", "on_close": "never", "failed_to_arm": True}
+
+
+def selected_rule(hass, entry, kind, key):
+    if not isinstance(kind, str) or not isinstance(key, str) or kind not in SECTIONS:
+        raise ValueError("Tipo de aviso no válido.")
+    existing = entry.options.get(SECTIONS[kind], {}).get(key)
+    if kind == "alarm":
+        if key not in EVENTS:
+            raise ValueError("Evento de Alarmo no válido.")
+    elif existing is None:
+        state = hass.states.get(key)
+        domains = {"binary_sensor"} if kind == "sensor" else {"sensor", "binary_sensor"}
+        if state is None or state.domain not in domains:
+            raise ValueError("El sensor ya no está disponible. Actualiza la lista.")
+    result = rule_defaults(hass, kind, key)
+    result.update(deepcopy(existing or {}))
+    if kind == "speech" and existing:
+        result["use_defaults"] = existing.get("use_defaults", False)
+        result["trigger"] = existing.get("trigger", "manual")
+        result["cooldown"] = existing.get("cooldown", 60)
+    if kind == "sensor" and existing:
+        result["closed_state"] = existing.get("closed_state", CLOSED_STATES.get(result["open_state"], "off"))
+    return result
+
+
+def voice_info(hass, engine, language=None, voice=None):
+    from homeassistant.components.tts import get_engine_instance
+
+    try:
+        provider = get_engine_instance(hass, engine)
+    except KeyError:
+        provider = None
+    if provider is None:
+        raise ValueError("El motor de voz no está disponible. Configúralo en Home Assistant y actualiza la lista.")
+    languages = list(provider.supported_languages or [])
+    language, _ = voice_settings(provider, language, voice)
+    if language not in languages:
+        raise ValueError("El motor no admite ese idioma. Selecciona uno de la lista.")
+    voices = provider.async_get_supported_voices(language) or []
+    return {"languages": languages, "default_language": preferred_language(provider),
+            "language": language, "voices": [{"value": v.voice_id, "label": v.name} for v in voices]}
+
+
+def playback_status(entry):
+    player = entry.runtime_data
+    sound = getattr(player, "sound", None)
+    return {"active": sound is not None, "paused": bool(getattr(player, "paused", False)),
+            "priority": getattr(player, "priority", Priority.LOW).name.lower(),
+            "source": "Prueba del panel" if getattr(player, "owner", None) == "panel_preview" else "Aviso o reproducción externa"}
+
+
+def speech_status(hass):
+    manager = hass.data.get("jacksignal_speech")
+    return {key: manager.diagnostic(key) for key in manager.rules} if manager else {}
+
+
+def sensor_health(state):
+    """HA availability and timestamps, not a claim about physical connectivity."""
+    if state is None:
+        return {"availability": "missing", "state": None, "last_changed": None,
+                "last_updated": None, "last_reported": None}
+    return {"availability": state.state if state.state in {"unknown", "unavailable"} else "available",
+            "state": state.state,
+            "last_changed": state.last_changed.isoformat(),
+            "last_updated": state.last_updated.isoformat(),
+            "last_reported": state.last_reported.isoformat() if getattr(state, "last_reported", None) else None}
+
+
+def snapshot(hass, entry):
+    rows = []
+    voice_status = speech_status(hass)
+    for kind, section in SECTIONS.items():
+        rules = entry.options.get(section, {})
+        if kind == "alarm":
+            keys = list(EVENTS)
+        else:
+            domains = {"binary_sensor"} if kind == "sensor" else {"sensor", "binary_sensor"}
+            keys = sorted({s.entity_id for s in hass.states.async_all() if s.domain in domains} | rules.keys())
+        for key in keys:
+            state = hass.states.get(key)
+            rule = selected_rule(hass, entry, kind, key)
+            configured = bool(key in rules if kind == "speech" else rule.get("sound") or rule.get("close_sound"))
+            enabled = rule.get("enabled", True)
+            rows.append({"kind": kind, "key": key, "name": EVENT_NAMES[key] if kind == "alarm" else state.name if state else key,
+                         "health": sensor_health(state) if kind != "alarm" else None,
+                         "state": state.state if state else None, "unit": state.attributes.get("unit_of_measurement", "") if state else "", "configured": configured,
+                         "status": "unconfigured" if not configured else "configured" if enabled else "disabled",
+                         "speech_status": voice_status.get(key, ""),
+                         "suggested_state_labels": suggested_state_labels(state) if kind == "speech" else {},
+                         "rule": rule, "effective": effective_rule(hass, rule, entry.options) if kind == "speech" else rule})
+    panel = entry.options.get(ALARM)
+    return {"revision": revision(entry.options), "history_settings": history.settings(hass), "rows": rows, "playback": playback_status(entry), "alarm": panel,
+            "alarm_available": bool(panel and hass.states.get(panel) and hass.states.get(panel).state not in {"unavailable", "unknown"}),
+            "voice_defaults": general_voice(hass, entry.options), "piper_engines": piper_engines(hass),
+            "supervisor": "hassio" in hass.config.components,
+            "engines": [{"value": s.entity_id, "label": s.name} for s in hass.states.async_all("tts")]}
+
+
+def local_media(directories):
+    """Bound file listing and never traverse symlink directories."""
+    items = []
+    visited = 0
+    for key, directory in directories.items():
+        root = Path(directory).resolve()
+        for base, dirs, files in root.walk(follow_symlinks=False):
+            dirs[:] = sorted(name for name in dirs if not name.startswith("."))
+            visited += 1
+            if visited > 2000:
+                return {"items": items, "truncated": True}
+            for name in sorted(files):
+                path = base / name
+                if path.suffix.lower() not in AUDIO_EXTENSIONS or not path.resolve().is_relative_to(root):
+                    continue
+                relative = path.relative_to(root).as_posix()
+                items.append({"value": f"{LOCAL_PREFIX}{key}/{relative}", "label": f"{key}/{relative}"})
+                if len(items) >= 2000:
+                    return {"items": items, "truncated": True}
+    return {"items": items, "truncated": False}
+
+
+async def validate_rule(hass, kind, key, supplied, options=None):
+    if not isinstance(supplied, dict):
+        raise ValueError("La configuración no es válida.")
+    allowed = {"enabled", "priority"} | ({"sound", "repeat"} if kind == "alarm" else
+        {"sound", "close_sound", "open_state", "closed_state", "on_open", "on_close", "failed_to_arm"} if kind == "sensor" else
+        {"engine", "language", "voice", "speed", "use_defaults", "before", "after", "unit", "trigger", "threshold", "cooldown", "state_labels"})
+    if supplied.keys() - allowed:
+        raise ValueError("Hay campos de configuración no reconocidos.")
+    rule = {**rule_defaults(hass, kind, key), **deepcopy(supplied)}
+    if rule.get("priority") not in {p.name.lower() for p in Priority}:
+        raise ValueError("Selecciona una prioridad válida.")
+    for field in ("enabled", "repeat", "failed_to_arm", "unit", "use_defaults"):
+        if field in rule and not isinstance(rule[field], bool):
+            raise ValueError("El estado de activación no es válido.")
+    if kind == "speech":
+        # Old callers with an explicit engine remain custom unless opting in.
+        rule["use_defaults"] = supplied.get("use_defaults", False)
+        inherited = rule["use_defaults"]
+        if inherited:
+            rule = effective_rule(hass, rule, options or {})
+        rule["speed"] = validate_speed(rule.get("speed", 1.0))
+        engine = rule.get("engine")
+        if not isinstance(engine, str) or not engine.startswith("tts."):
+            raise ValueError("Selecciona un motor de voz configurado en Home Assistant.")
+        for field in ("language", "voice"):
+            if field in rule and (not isinstance(rule[field], str) or len(rule[field]) > 200):
+                raise ValueError("El idioma o la voz no son válidos.")
+            if not rule.get(field):
+                rule.pop(field, None)
+        if rule.get("language") or rule.get("voice"):
+            info = voice_info(hass, engine, rule.get("language"), rule.get("voice"))
+            if rule.get("voice") and rule["voice"] not in {v["value"] for v in info["voices"]}:
+                raise ValueError("La voz no está disponible para ese idioma.")
+        labels = rule.get("state_labels", {})
+        if not isinstance(labels, dict) or len(labels) > 32:
+            raise ValueError("Añade como máximo 32 equivalencias de voz.")
+        for raw, spoken in labels.items():
+            if (not isinstance(raw, str) or not raw.strip() or len(raw) > 100
+                    or not isinstance(spoken, str) or not spoken.strip() or len(spoken) > 200):
+                raise ValueError("Cada equivalencia necesita un estado (hasta 100 caracteres) y un texto (hasta 200).")
+        for field in ("before", "after"):
+            if not isinstance(rule[field], str) or len(rule[field]) > 1000:
+                raise ValueError("El texto de voz admite hasta 1000 caracteres por campo.")
+        if rule["trigger"] not in {"manual", "change", "above", "below"}:
+            raise ValueError("Selecciona cuándo debe hablar el sensor.")
+        cooldown = rule["cooldown"]
+        if isinstance(cooldown, bool) or not isinstance(cooldown, (float, int)) or not math.isfinite(cooldown) or not 0 <= cooldown <= 86400:
+            raise ValueError("El intervalo debe estar entre 0 y 86400 segundos.")
+        if rule["trigger"] in {"above", "below"}:
+            threshold = rule.get("threshold")
+            if isinstance(threshold, bool) or not isinstance(threshold, (float, int)) or not math.isfinite(threshold):
+                raise ValueError("Escribe un umbral numérico válido.")
+    else:
+        for field in ("sound", "close_sound"):
+            selection = rule.get(field)
+            if not selection:
+                rule.pop(field, None)
+                continue
+            if not isinstance(selection, dict) or not isinstance(selection.get("media_content_id"), str) or not selection["media_content_id"].startswith(LOCAL_PREFIX):
+                raise ValueError("Selecciona un archivo de Mis medios.")
+            await resolve(hass, selection["media_content_id"], None)
+        if kind == "alarm" and not rule.get("sound"):
+            raise ValueError("Selecciona el sonido del evento; para conservarlo sin avisar usa Desactivar.")
+        if kind == "sensor":
+            for field in ("open_state", "closed_state"):
+                value = rule.get(field)
+                if not isinstance(value, str) or not value.strip() or len(value) > 100 or value.strip().casefold() in {"unknown", "unavailable"}:
+                    raise ValueError("Indica estados de apertura y cierre válidos.")
+                rule[field] = value.strip().casefold()
+            if rule["open_state"] == rule["closed_state"]:
+                raise ValueError("Los estados de apertura y cierre deben ser distintos.")
+            for mode, field in (("on_open", "sound"), ("on_close", "close_sound")):
+                if rule[mode] not in {"never", "disarmed", "always"}:
+                    raise ValueError("Selecciona una condición válida.")
+                if rule[mode] != "never" and not rule.get(field):
+                    raise ValueError("Cada aviso activado necesita su propio sonido de apertura o cierre.")
+    if kind == "speech" and inherited:
+        for field in VOICE_FIELDS:
+            rule.pop(field, None)
+    return rule
+
+
+async def handle(hass, entry, msg):
+    """Shared action implementation; the websocket boundary requires an admin."""
+    action = msg["action"]
+    if action == "history_settings":
+        return {"settings": await history.configure(hass, msg["days"]) if "days" in msg else history.settings(hass)}
+    if action == "history_clear":
+        if msg.get("confirm") is not True or msg.get("scope") not in {"sensor", "all"}:
+            raise ValueError("Confirma el alcance del borrado del historial.")
+        key = msg.get("key", "")
+        if msg["scope"] == "sensor" and (not isinstance(key, str) or len(key) > 255 or key.partition(".")[0] not in {"sensor", "binary_sensor"}):
+            raise ValueError("Selecciona un sensor válido.")
+        removed = await history.clear(hass, key if msg["scope"] == "sensor" else None)
+        return {"removed": removed, "settings": history.settings(hass)}
+    if action == "history_all":
+        key = msg.get("key", "")
+        if not isinstance(key, str) or len(key) > 255 or (key and key.partition(".")[0] not in {"sensor", "binary_sensor"}):
+            raise ValueError("Selecciona un sensor válido o todos los sensores.")
+        result = history.query(hass, key or None, msg.get("filters"), msg.get("limit", 50))
+        keys = {item["sensor"] for item in hass.data.get(history.DATA, ())}
+        sensors = []
+        for entity_id in sorted(keys):
+            state = hass.states.get(entity_id)
+            sensors.append({"key": entity_id, "name": state.name if state else entity_id})
+        return {**result, "sensors": sensors}
+    if action == "history":
+        key = msg.get("key", "")
+        if not isinstance(key, str) or len(key) > 255 or key.partition(".")[0] not in {"sensor", "binary_sensor"}:
+            raise ValueError("Selecciona un sensor válido.")
+        return history.query(hass, key, msg.get("filters"), msg.get("limit", 50))
+    if action == "defaults":
+        if msg.get("revision") != revision(entry.options):
+            raise ValueError("La configuración ha cambiado. Actualiza antes de guardar.")
+        supplied = msg.get("rule", {})
+        if not isinstance(supplied, dict) or supplied.keys() - set(VOICE_FIELDS):
+            raise ValueError("La configuración general no es válida.")
+        validated = await validate_rule(hass, "speech", "", supplied)
+        voice_info(hass, validated["engine"], validated.get("language"), validated.get("voice"))
+        if msg.get("revision") != revision(entry.options):
+            raise ValueError("La configuración ha cambiado. Actualiza antes de guardar.")
+        options = deepcopy(dict(entry.options))
+        options[SPEECH_DEFAULTS] = {field: validated[field] for field in VOICE_FIELDS if field in validated}
+        if msg.get("apply_to_all", False):
+            for rule in options.get(SPEECH_RULES, {}).values():
+                rule["use_defaults"] = True
+        hass.config_entries.async_update_entry(entry, options=options)
+        return snapshot(hass, entry)
+    if action == "tts_info":
+        return voice_info(hass, msg.get("engine", ""), msg.get("language"), msg.get("voice"))
+    if action == "status":
+        entities = msg.get("entities", [])
+        if (not isinstance(entities, list) or len(entities) > 2000 or
+                any(not isinstance(key, str) or len(key) > 255 or key.partition(".")[0] not in {"sensor", "binary_sensor"} for key in entities)):
+            raise ValueError("La consulta de sensores no es válida (máximo 2000).")
+        history_keys = msg.get("history_keys", [])
+        if not isinstance(history_keys, list) or len(history_keys) > 20 or any(key not in entities for key in history_keys):
+            raise ValueError("Consulta como máximo 20 historiales de los sensores visibles.")
+        queries = msg.get("history_queries", [])
+        if not isinstance(queries, list) or len(queries) > 20 or any(not isinstance(q, dict) or q.get("key") not in entities for q in queries):
+            raise ValueError("Consulta como máximo 20 historiales de sensores visibles.")
+        results = {key: history.query(hass, key) for key in history_keys}
+        for q in queries:
+            results[q["key"]] = history.query(hass, q["key"], q.get("filters"), q.get("limit", 50))
+        return {**playback_status(entry), "speech": speech_status(hass),
+                "history": results,
+                "sensors": {key: sensor_health(hass.states.get(key)) for key in set(entities)}}
+    if action == "batch":
+        if msg.get("revision") != revision(entry.options):
+            raise ValueError("La configuración ha cambiado. Actualiza antes de guardar.")
+        targets, changes = msg.get("targets"), msg.get("changes")
+        if not isinstance(targets, list) or not 1 <= len(targets) <= 200:
+            raise ValueError("Selecciona entre 1 y 200 avisos.")
+        if not isinstance(changes, dict) or not changes or changes.keys() - {"enabled", "priority"}:
+            raise ValueError("Solo puedes cambiar activación y prioridad en bloque.")
+        options = deepcopy(dict(entry.options))
+        for target in targets:
+            if not isinstance(target, dict):
+                raise ValueError("Selección de avisos no válida.")
+            kind, key = target.get("kind"), target.get("key")
+            rule = selected_rule(hass, entry, kind, key)
+            if key not in entry.options.get(SECTIONS[kind], {}):
+                raise ValueError("Configura todos los avisos seleccionados antes de modificarlos en bloque.")
+            rule = await validate_rule(hass, kind, key, {**rule, **changes}, entry.options)
+            options[SECTIONS[kind]][key] = rule
+        if msg.get("revision") != revision(entry.options):
+            raise ValueError("La configuración ha cambiado. Actualiza antes de guardar.")
+        hass.config_entries.async_update_entry(entry, options=options)
+        return {**snapshot(hass, entry), "message": f"Actualizados {len(targets)} avisos."}
+    if action == "list":
+        return snapshot(hass, entry)
+    if action == "media":
+        return await hass.async_add_executor_job(local_media, dict(hass.config.media_dirs))
+    if action == "stop_test":
+        await entry.runtime_data.stop(owner="panel_preview")
+        return {"message": "Prueba detenida. Los avisos de Alarmo no se han detenido."}
+    kind, key = msg.get("kind"), msg.get("key")
+    rule = selected_rule(hass, entry, kind, key)
+    if action == "test":
+        if "rule" in msg:
+            rule = await validate_rule(hass, kind, key, msg["rule"], entry.options)
+        attempt = history.begin(hass, key, "Prueba de voz (panel)" if kind == "speech" else "Prueba de audio (panel)", "low") if kind != "alarm" else None
+        try:
+            if kind == "speech":
+                sound = await audio_for(hass, hass.states.get(key), effective_rule(hass, rule, entry.options))
+            else:
+                field = msg.get("field", "sound")
+                if field not in ({"sound", "close_sound"} if kind == "sensor" else {"sound"}):
+                    raise ValueError("Prueba no válida para este aviso.")
+                if not rule.get(field):
+                    raise ValueError("Este aviso no tiene un sonido asignado.")
+                sound = await resolve(hass, rule[field]["media_content_id"], None)
+            # Tests never borrow a rule's critical priority, repeat, or Alarmo owner.
+            accepted = await entry.runtime_data.play(sound, Priority.LOW, owner="panel_preview", **({"on_result": history.playback_result(attempt)} if attempt else {}))
+            if attempt:
+                history.accepted(attempt, accepted)
+            return {"accepted": accepted, "message": "Prueba aceptada (P0, sin repetición)." if accepted else "No se ha reproducido: hay un aviso de mayor prioridad o una sirena protegida."}
+        except (HomeAssistantError, OSError, ValueError):
+            history.finish(attempt, "error", "No se pudo preparar o reproducir la prueba del panel.")
+            raise
+    if action not in {"save", "toggle"}:
+        raise ValueError("Acción no válida.")
+    if msg.get("revision") != revision(entry.options):
+        raise ValueError("La configuración ha cambiado en otra pantalla. Actualiza antes de guardar; tus cambios no se han aplicado.")
+    if action == "save":
+        rule = await validate_rule(hass, kind, key, msg.get("rule"), entry.options)
+    else:
+        if key not in entry.options.get(SECTIONS[kind], {}):
+            raise ValueError("Configura primero este aviso.")
+        if not isinstance(msg.get("enabled"), bool):
+            raise ValueError("Indica si quieres activar o desactivar el aviso.")
+        rule["enabled"] = msg["enabled"]
+    # Validate again after async resolution; other option screens may have saved meanwhile.
+    if msg.get("revision") != revision(entry.options):
+        raise ValueError("La configuración ha cambiado. Actualiza antes de guardar.")
+    options = deepcopy(dict(entry.options))
+    options.setdefault(SECTIONS[kind], {})[key] = rule
+    hass.config_entries.async_update_entry(entry, options=options)
+    return snapshot(hass, entry)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "jacksignal/manage", vol.Required("action"): str,
+    vol.Optional("kind"): str, vol.Optional("key"): str, vol.Optional("revision"): str,
+    vol.Optional("rule"): dict, vol.Optional("enabled"): bool, vol.Optional("field"): str,
+    vol.Optional("entities"): [str], vol.Optional("history_keys"): [str],
+    vol.Optional("history_queries"): [dict], vol.Optional("filters"): dict, vol.Optional("limit"): int,
+    vol.Optional("days"): int, vol.Optional("scope"): str, vol.Optional("confirm"): bool,
+    vol.Optional("engine"): str, vol.Optional("language"): str, vol.Optional("voice"): str,
+    vol.Optional("apply_to_all"): bool, vol.Optional("targets"): [dict], vol.Optional("changes"): dict})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_manage(hass, connection, msg):
+    current = hass.data.get(DATA)
+    if not current or not current.get("entry"):
+        connection.send_error(msg["id"], "not_loaded", "JackSignal no está cargado. Revisa la integración.")
+        return
+    try:
+        async with current["lock"]:
+            result = await handle(hass, current["entry"], msg)
+        connection.send_result(msg["id"], result)
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_request", str(err))
+    except (HomeAssistantError, OSError):
+        connection.send_error(msg["id"], "audio_error", "No se pudo preparar el audio. Comprueba el archivo, el motor de voz y los registros de JackSignal.")
+
+
+async def async_setup_panel(hass, entry):
+    current = hass.data.setdefault(DATA, {"lock": asyncio.Lock()})
+    if not current.get("registered"):
+        await hass.http.async_register_static_paths([
+            StaticPathConfig("/jacksignal-panel.js", str(Path(__file__).with_name("panel.js")), False)
+        ])
+        websocket_api.async_register_command(hass, ws_manage)
+        current["registered"] = True
+    current["entry"] = entry
+    # Versioned module URLs prevent a previous panel remaining cached after upgrades.
+    manifest = await hass.async_add_executor_job(Path(__file__).with_name("manifest.json").read_text)
+    version = json.loads(manifest)["version"]
+    await panel_custom.async_register_panel(hass, frontend_url_path=PANEL,
+        webcomponent_name="jacksignal-panel", sidebar_title="JackSignal", sidebar_icon="mdi:bullhorn-outline",
+        module_url=f"/jacksignal-panel.js?v={version}", require_admin=True)
+
+    def unload():
+        current.pop("entry", None)
+        frontend.async_remove_panel(hass, PANEL)
+    entry.async_on_unload(unload)
