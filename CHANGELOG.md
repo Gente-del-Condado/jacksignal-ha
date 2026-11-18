@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## 0.19.3
+
+- Añadida una indicación para consultar los errores de todos los sensores desde el historial global y acotar después por sensor.
+- Revisión de documentación, sin cambios en reproducción, reglas ni prioridades.
+
 ## 0.19.2
 
 - Perfil AppArmor propio del instalador, sin acceso a red ni a la configuración privada de Core.

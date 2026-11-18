@@ -137,6 +137,8 @@ El historial se guarda en el almacenamiento local de Home Assistant y se conserv
 
 En **Gestionar avisos → Historial de todos los sensores** puedes consultar juntos los avisos de audio y voz, del más reciente al más antiguo. Cada registro identifica su sensor. El selector **Sensor** permite elegir uno o volver a **Todos los sensores**, incluidos sensores eliminados que aún conserven registros. Los filtros son independientes de la lista de fichas y la vista se actualiza cada cinco segundos mientras está abierta. Comparte la retención y el límite global existentes; no duplica registros.
 
+Para revisar los errores de toda la instalación, abre **Historial de todos los sensores**, deja **Sensor → Todos los sensores** y selecciona **Resultado → Error**. Después puedes elegir un sensor concreto sin perder el filtro de resultado.
+
 Cada historial permite filtrar por **resultado, audio o voz, prioridad, periodo y texto** (origen, motivo o estado). Se consultan todos los registros conservados y se muestran en bloques de 50 con **Mostrar 50 más**. Puedes borrar el historial de un sensor o el completo, con confirmación; el borrado incluye registros ocultos por los filtros y no modifica avisos ni prioridades.
 
 Las escrituras se agrupan con un retraso de 15 segundos tras los cambios para reducir accesos al disco y se guardan al detener o descargar la integración. Un corte de corriente puede perder cambios pendientes. Si un intento quedó sin resultado final antes del reinicio, se marca como interrumpido. Si el sensor no comunica cambios a Home Assistant, no se inventan intentos: consulta también su disponibilidad y fechas.
