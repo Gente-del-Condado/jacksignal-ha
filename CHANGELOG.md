@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## 0.19.2
+
+- Perfil AppArmor propio del instalador, sin acceso a red ni a la configuración privada de Core.
+- Conserva instalación repetible, actualización atómica y recuperación de la integración anterior.
+- El perfil protege el instalador: audio, voz, Alarmo y DLNA continúan ejecutándose dentro de Home Assistant Core.
+
 ## 0.19.1
 
 - Documentación y enlaces de las distribuciones con sus nombres actuales.
